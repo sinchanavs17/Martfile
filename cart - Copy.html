@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cart - Farm-on</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h1 { color: #10b981; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+    .total { font-weight: bold; font-size: 18px; text-align: right; margin-top: 20px; }
+    .btn { background: #10b981; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Your Cart 🛒</h1>
+
+  <table id="cart-table">
+    <tr>
+      <th>Item</th>
+      <th>Qty</th>
+      <th>Price</th>
+    </tr>
+  </table>
+
+  <div class="total" id="cart-total">Total: ₹0</div>
+
+  <button class="btn" onclick="checkout()">Proceed to Checkout</button>
+
+  <script>
+    let cart = JSON.parse(localStorage.getItem("cart")) || {};
+    
+    function loadCart() {
+      let table = document.getElementById("cart-table");
+      let total = 0;
+      for (let item in cart) {
+        let row = table.insertRow();
+        row.insertCell(0).innerText = item;
+        row.insertCell(1).innerText = cart[item].qty;
+        row.insertCell(2).innerText = "₹" + (cart[item].qty * cart[item].price);
+        total += cart[item].qty * cart[item].price;
+      }
+      document.getElementById("cart-total").innerText = "Total: ₹" + total;
+    }
+
+    function checkout() {
+      alert("Order placed successfully!");
+      localStorage.removeItem("cart");
+      window.location.href = "index.html";
+    }
+
+    loadCart();
+  </script>
+</body>
+</html>

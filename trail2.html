@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Farm-on</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden{display:none}
+    .product-card{border:1px solid #ddd;border-radius:8px;padding:10px;text-align:center;background:#fff;position:relative}
+    .product-card img{width:100%;height:120px;object-fit:cover;border-radius:6px}
+    .count-display{position:absolute;top:5px;right:5px;background:#4caf50;color:#fff;padding:2px 6px;border-radius:50%;font-size:12px}
+  </style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- Navbar -->
+  <div class="navbar bg-green-600 text-white px-4">
+    <div class="flex-1"><a class="text-xl font-bold">Farm-on</a></div>
+    <div class="flex gap-2">
+      <button class="btn btn-sm" onclick="showView('home')">Home</button>
+      <button class="btn btn-sm" onclick="showView('shop')">Shop</button>
+      <button class="btn btn-sm" onclick="showView('offers')">Offers</button>
+      <button class="btn btn-sm" onclick="showView('orders')">Orders</button>
+      <button class="btn btn-sm" onclick="showView('cart')">Cart (<span id="cartCount">0</span>)</button>
+      <button class="btn btn-sm" onclick="showView('login')">Login</button>
+    </div>
+  </div>
+
+  <!-- Views -->
+  <div id="homeView" class="p-4 views">
+    <h2 class="text-2xl font-bold">Welcome to Farm-on</h2>
+    <input id="searchInput" type="text" placeholder="Search for products..." class="input input-bordered w-full max-w-xs mt-2">
+    <button class="btn btn-primary ml-2" onclick="findProducts()">Search</button>
+    <h3 class="mt-4 text-xl">Featured Products</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2" id="homeProducts"></div>
+  </div>
+
+  <section id="shopView" class="views hidden p-4">
+    <h2 class="text-2xl font-bold">Shop - All Products</h2>
+    <button class="btn btn-ghost mb-2" onclick="goBack()">← Back</button>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="productGrid"></div>
+  </section>
+
+  <section id="cartView" class="views hidden p-4">
+    <h2 class="text-2xl font-bold">Your Cart</h2>
+    <button class="btn btn-ghost mb-2" onclick="goBack()">← Back</button>
+    <table class="table w-full">
+      <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+      <tbody id="cartTable"></tbody>
+    </table>
+    <h3 class="mt-2 font-bold">Grand Total: ₹<span id="grandTotal">0</span></h3>
+    <h4 class="mt-2 text-green-700" id="discountText"></h4>
+    <button class="btn btn-success mt-3" onclick="placeOrder()">Place Order</button>
+  </section>
+
+  <section id="loginView" class="views hidden p-4">
+    <h2 class="text-2xl font-bold">Login</h2>
+    <button class="btn btn-ghost mb-2" onclick="goBack()">← Back</button>
+    <form id="loginForm" onsubmit="event.preventDefault();sendMockOTP();">
+      <input type="text" id="loginPhone" placeholder="Phone number" class="input input-bordered block my-2">
+      <button class="btn btn-primary">Send OTP</button>
+    </form>
+    <form id="otpForm" class="hidden" onsubmit="event.preventDefault();verifyMockOTP();">
+      <input type="text" id="loginOtp" placeholder="Enter OTP" class="input input-bordered block my-2">
+      <button class="btn btn-success">Verify OTP</button>
+    </form>
+    <p class="mt-2">No account? <a href="#" onclick="showView('register')">Register</a></p>
+  </section>
+
+  <section id="registerView" class="views hidden p-4">
+    <h2 class="text-2xl font-bold">Register</h2>
+    <button class="btn btn-ghost mb-2" onclick="goBack()">← Back</button>
+    <form id="registerForm" onsubmit="event.preventDefault();sendMockOTPRegister();">
+      <input type="text" placeholder="Name" class="input input-bordered block my-2">
+      <input type="text" placeholder="Phone number" class="input input-bordered block my-2">
+      <button class="btn btn-primary">Send OTP</button>
+    </form>
+    <div id="regOtpWrap" class="hidden">
+      <input type="text" id="regOtp" placeholder="Enter OTP" class="input input-bordered block my-2">
+      <button class="btn btn-success" onclick="verifyRegisterOTP()">Verify & Register</button>
+    </div>
+  </section>
+
+  <section id="ordersView" class="views hidden p-4">
+    <h2 class="text-2xl font-bold">Your Orders</h2>
+    <button class="btn btn-ghost mb-2" onclick="goBack()">← Back</button>
+    <ul id="ordersList"></ul>
+  </section>
+
+  <section id="offersView" class="views hidden p-4">
+    <h2 class="text-2xl font-bold">Current Offers</h2>
+    <button class="btn btn-ghost mb-2" onclick="goBack()">← Back</button>
+    <ul class="list-disc ml-6">
+      <li>10% off on Fruits</li>
+      <li>Free delivery above ₹500</li>
+    </ul>
+  </section>
+
+  <script>
+    const products = [
+      {id:1,name:'Tomatoes',price:50,image:'img2.jpeg',category:'vegetables'},
+      {id:11,name:'Apple',price:120,image:'https://cdn.pixabay.com/photo/2017/01/20/15/06/red-1999898_1280.jpg',category:'fruits'},
+      {id:13,name:'Banana',price:40,image:'https://cdn.pixabay.com/photo/2018/05/15/21/09/bananas-3408450_1280.jpg',category:'fruits'},
+      {id:14,name:'Mango',price:100,image:'https://cdn.pixabay.com/photo/2016/03/05/22/32/mango-1239347_1280.jpg',category:'fruits'},
+      {id:16,name:'Eggs (12 pack)',price:70,image:'https://cdn.pixabay.com/photo/2016/03/05/20/07/egg-1238346_1280.jpg',category:'dairy'},
+    ];
+
+    let cart = JSON.parse(localStorage.getItem('cart')||'{}');
+    let viewHistory = ['home'];
+
+    // ---------- CART FUNCTIONS ----------
+    function renderCartTable(){
+      const tbody=document.getElementById('cartTable');tbody.innerHTML='';
+      let total=0,discount=0;
+      for(const pid in cart){
+        const p=products.find(x=>x.id==pid);
+        if(!p) continue;
+        const qty=cart[pid];
+        const line=qty*p.price;
+        total+=line;
+        tbody.innerHTML+=`<tr><td>${p.name}</td><td>${qty}</td><td>₹${p.price}</td><td>₹${line}</td></tr>`;
+        if(p.category==='fruits'){ discount += line*0.10; } // 10% off fruits
+      }
+      let finalTotal = total - discount;
+      if(total>=500){document.getElementById('discountText').textContent="Free Delivery Applied";}
+      else{document.getElementById('discountText').textContent="";}
+      document.getElementById('grandTotal').textContent=finalTotal;
+    }
+
+    function placeOrder(){
+      fetch("http://localhost:3000/placeOrder",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({cart})
+      }).then(r=>r.json()).then(res=>{
+        alert("Order placed! ID: "+res.orderId);
+        cart={};localStorage.setItem('cart','{}');
+        updateCartBtn();renderCartTable();
+      });
+    }
+
+    // ---------- PRODUCT RENDER ----------
+    function renderProducts(){
+      const grid=document.getElementById('productGrid');
+      grid.innerHTML='';
+      products.forEach(p=>{
+        const card=document.createElement('div');
+        card.className='product-card';
+        card.innerHTML=`<img src="${p.image}" alt="${p.name}">
+          <h4>${p.name}</h4>
+          <div class="price-row flex justify-between items-center mt-2">
+            <span>₹${p.price}</span>
+            <button class="btn btn-sm btn-primary" onclick="addToCart(${p.id})">Add</button>
+          </div>
+          <div class="count-display" id="count-${p.id}">${cart[p.id]||0}</div>`;
+        grid.appendChild(card);
+      });
+      updateCartBtn();
+    }
+
+    function addToCart(id){
+      cart[id]=(cart[id]||0)+1;
+      localStorage.setItem('cart',JSON.stringify(cart));
+      updateCartBtn();
+      const el=document.getElementById('count-'+id);
+      if(el) el.textContent=cart[id];
+    }
+    function updateCartBtn(){
+      document.getElementById('cartCount').textContent=Object.values(cart).reduce((a,b)=>a+b,0);
+    }
+
+    // ---------- VIEW SYSTEM ----------
+    function showView(view){
+      document.querySelectorAll('.views').forEach(v=>v.classList.add('hidden'));
+      if(view==='shop'){document.getElementById('shopView').classList.remove('hidden');renderProducts();}
+      else if(view==='cart'){document.getElementById('cartView').classList.remove('hidden');renderCartTable();}
+      else if(view==='login'){document.getElementById('loginView').classList.remove('hidden');}
+      else if(view==='register'){document.getElementById('registerView').classList.remove('hidden');}
+      else if(view==='orders'){document.getElementById('ordersView').classList.remove('hidden');}
+      else if(view==='offers'){document.getElementById('offersView').classList.remove('hidden');}
+      else {document.getElementById('homeView').classList.remove('hidden');view='home';}
+      if(viewHistory[viewHistory.length-1]!==view){viewHistory.push(view);}
+    }
+    function goBack(){
+      if(viewHistory.length>1){
+        viewHistory.pop(); 
+        const prev=viewHistory.pop(); 
+        showView(prev);
+      }else{
+        showView('home');
+      }
+    }
+
+    // ---------- OTP Mock ----------
+    function sendMockOTP(){alert('OTP sent: 1234');document.getElementById('loginForm').style.display='none';document.getElementById('otpForm').style.display='block';}
+    function verifyMockOTP(){const val=document.getElementById('loginOtp').value;if(val==='1234'){alert('Login success');showView('home');}else alert('Invalid OTP');}
+    function sendMockOTPRegister(){alert('OTP sent: 1234');document.getElementById('regOtpWrap').style.display='block';}
+    function verifyRegisterOTP(){const val=document.getElementById('regOtp').value;if(val==='1234'){alert('Registered! Login now');showView('login');}else alert('Invalid OTP');}
+
+    renderProducts();updateCartBtn();
+  </script>
+</body>
+</html>

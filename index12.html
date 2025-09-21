@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Farm-on — Fast Delivery</title>
+  <style>
+    :root{--green:#10b981;--deep:#065f46;--muted:#64748b}
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;background:linear-gradient(180deg,#f0fdf4 0%,#ecfeff 100%);color:#0f172a}
+    header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:rgba(59,108,126,0.2)}
+    header img.logo{width:64px;height:64px;object-fit:contain}
+    .search{flex:1;display:flex;gap:8px}
+    .search input{flex:1;padding:10px;border-radius:8px;border:1px solid #e6edf3;background:#f3f7f9}
+    .btn{cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:600}
+    .btn-primary{background:var(--green);color:#fff}
+    .btn-ghost{background:transparent;color:#334155}
+    .container{max-width:1100px;margin:18px auto;padding:0 16px}
+
+    .hero{display:flex;gap:24px;align-items:center;margin:10px 0;background:linear-gradient(90deg,#ecfeff 0%, #f0fdf4 100%);padding:18px;border-radius:12px}
+    .hero-left{flex:1}
+    .hero-left h1{margin:0 0 8px;font-size:28px}
+    .cta-row{display:flex;gap:10px;margin-top:10px}
+
+    .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:18px}
+    .product-card{background:white;border-radius:10px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06);display:flex;flex-direction:column;gap:8px}
+    .product-card img{width:100%;height:150px;object-fit:cover;border-radius:8px}
+    .price-row{display:flex;justify-content:space-between;align-items:center}
+    .count-display{font-weight:700;color:var(--deep)}
+
+    /* cart table */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
+
+    /* small screens */
+    @media (max-width:720px){.hero{flex-direction:column}.product-card img{height:120px}}
+
+    /* simple nav for views */
+    .views{min-height:60vh}
+    .hidden{display:none}
+
+    /* login/register styles */
+    .auth-box{max-width:420px;margin:30px auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 3px 12px rgba(16,24,40,0.06)}
+    .auth-box input{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #e6edf3;background:#f8fafb}
+
+    footer{margin-top:30px;padding:18px 0;text-align:center;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="Farm-on Logo.png" alt="logo" class="logo">
+    <div style="flex:1;display:flex;align-items:center;gap:12px">
+      <form class="search" onsubmit="event.preventDefault(); findProducts()">
+        <input id="searchInput" type="search" placeholder="Search for groceries, e.g. tomatoes, milk">
+        <button class="btn btn-primary" type="button" onclick="findProducts()">Search</button>
+      </form>
+      <div class="location">
+        <select id="locationSelect" aria-label="Select location">
+          <option>MG Road, Bengaluru</option>
+          <option>Indiranagar, Bengaluru</option>
+          <option>Koramangala, Bengaluru</option>
+          <option>HSR, Bengaluru</option>
+        </select>
+      </div>
+    </div>
+
+    <nav class="header-actions">
+      <button class="btn btn-ghost" onclick="showView('offers')">Offers</button>
+      <button class="btn btn-ghost" onclick="showView('orders')">Orders</button>
+      <button class="btn btn-primary" id="cartBtn" onclick="showView('cart')">Cart (0)</button>
+      <button class="btn" onclick="showView('login')">Login</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- HOME VIEW -->
+    <section id="homeView" class="views">
+      <section class="hero">
+        <div class="hero-left">
+          <h1>Fresh Stuffs. Delivered fast.</h1>
+          <p>Choose from fruits, vegetables, dairy, bakery and more — get delivery in minutes.</p>
+          <div class="cta-row">
+            <button class="btn btn-primary" onclick="showView('shop')">Shop Now</button>
+            <button class="btn btn-outline" onclick="alert('Download App')">Download App</button>
+          </div>
+        </div>
+        <div><img src="img1.jpg" alt="groceries" style="width:220px;border-radius:8px"></div>
+      </section>
+
+      <section style="margin-top:16px">
+        <h3>Popular</h3>
+        <div class="product-grid" id="popularGrid"></div>
+      </section>
+    </section>
+
+    <!-- SHOP VIEW -->
+    <section id="shopView" class="views hidden">
+      <h2>Shop - All Products</h2>
+      <div class="product-grid" id="productGrid"></div>
+    </section>
+
+    <!-- CART VIEW -->
+    <section id="cartView" class="views hidden">
+      <h2>Your Cart</h2>
+      <table id="cartTable"><tr><th>Item</th><th>Qty</th><th>Price</th><th></th></tr></table>
+      <div style="text-align:right;margin-top:12px"><strong id="cartTotal">Total: ₹0</strong></div>
+      <div style="margin-top:12px;text-align:right"><button class="btn btn-primary" onclick="checkout()">place order</button></div>
+    </section>
+
+    <!-- LOGIN VIEW (includes quick mock-OTP) -->
+    <section id="loginView" class="views hidden">
+      <div class="auth-box">
+        <h3>Login</h3>
+        <div id="loginForm">
+          <input id="loginPhone" placeholder="Phone number (eg: +9190...)" />
+          <button class="btn btn-primary" onclick="sendMockOTP()">Send OTP</button>
+        </div>
+        <div id="otpForm" style="display:none">
+          <input id="loginOtp" placeholder="Enter OTP" />
+          <button class="btn btn-primary" onclick="verifyMockOTP()">Verify OTP</button>
+        </div>
+        <p style="margin-top:8px">New? <a href="#" onclick="showView('register')">Register here</a></p>
+      </div>
+    </section>
+
+    <!-- REGISTER VIEW -->
+    <section id="registerView" class="views hidden">
+      <div class="auth-box">
+        <h3>Register</h3>
+        <input id="regName" placeholder="Full name" />
+        <input id="regPhone" placeholder="Phone number (eg: +9190...)" />
+        <button class="btn btn-primary" onclick="sendMockOTPRegister()">Send OTP</button>
+
+        <div id="regOtpWrap" style="display:none;margin-top:8px">
+          <input id="regOtp" placeholder="Enter OTP" />
+          <button class="btn btn-primary" onclick="verifyRegisterOTP()">Verify & Register</button>
+        </div>
+
+        <p style="margin-top:12px">Already have account? <a href="#" onclick="showView('login')">Login</a></p>
+      </div>
+    </section>
+
+    <!-- ORDERS / OFFERS placeholder -->
+    <section id="ordersView" class="views hidden"><h3>Your Orders</h3><p>No orders yet.</p></section>
+    <section id="offersView" class="views hidden"><h3>Offers</h3><p>Flat deals will show here.</p></section>
+
+  </main>
+
+  <footer><div class="container">© Farm-on— Fastest Delivery</div></footer>
+
+  <script>
+    // product catalog (10 vegetables + extras)
+    const products = [
+      {id:1,name:'Tomatoes',price:50,image:'img2.jpeg',category:'vegetables'},
+      {id:2,name:'Potatoes',price:30,image:'img3.jpeg',category:'vegetables'},
+      {id:3,name:'Carrots',price:40,image:'img4.jpeg',category:'vegetables'},
+      {id:4,name:'Cabbage',price:35,image:'img5.jpeg',category:'vegetables'},
+      {id:5,name:'Cauliflower',price:45,image:'img6.jpeg',category:'vegetables'},
+      {id:6,name:'Spinach',price:25,image:'img7.jpeg',category:'vegetables'},
+      {id:7,name:'Capsicum',price:60,image:'img8.jpeg',category:'vegetables'},
+      {id:8,name:'Brinjal',price:40,image:'img9.jpeg',category:'vegetables'},
+      {id:9,name:'Beetroot',price:50,image:'img10.jpeg',category:'vegetables'},
+      {id:10,name:'Ladyfinger',price:35,image:'img11.jpeg',category:'vegetables'},
+      {id:11,name:'Apple',price:120,image:'https://cdn.pixabay.com/photo/2017/01/20/15/06/red-1999898_1280.jpg',category:'fruits'},
+      {id:12,name:'Milk',price:50,image:'https://cdn.pixabay.com/photo/2016/03/05/19/02/honey-1238463_1280.jpg',category:'dairy'}
+    ];
+
+    // render product grids
+    function renderProducts(){
+      const grid=document.getElementById('productGrid');
+      const pop=document.getElementById('popularGrid');
+      grid.innerHTML='';pop.innerHTML='';
+      products.forEach(p=>{
+        const card=document.createElement('div');card.className='product-card';
+        card.innerHTML=`<img src="${p.image}" alt="${p.name}"><h4>${p.name}</h4><div class="price-row"><div>₹${p.price}/kg</div><div><button class="btn btn-primary" onclick="addToCart(${p.id})">Add</button></div></div><div class="count-display" id="count-${p.id}">0</div>`;
+        grid.appendChild(card);
+      });
+      // pick first 4 as popular
+      products.slice(0,4).forEach(p=>{
+        const c=document.createElement('div');c.className='product-card';c.innerHTML=`<img src="${p.image}" alt="${p.name}"><h4>${p.name}</h4><div class="price-row"><div>₹${p.price}/kg</div><div><button class="btn btn-primary" onclick="addToCart(${p.id})">Add</button></div></div><div class="count-display" id="count-pop-${p.id}">0</div>`;pop.appendChild(c);
+      });
+      updateAllCountsFromStorage();
+    }
+
+    // localStorage cart format: {productId:{qty:...,price:...,name:...}}
+    function getCart(){return JSON.parse(localStorage.getItem('cart')||'{}')}
+    function saveCart(c){localStorage.setItem('cart',JSON.stringify(c));updateCartBtn();updateAllCountsFromStorage();}
+
+    function addToCart(productId){
+      const p=products.find(x=>x.id===productId);
+      const cart=getCart();
+      if(!cart[productId]) cart[productId]={qty:0,price:p.price,name:p.name};
+      cart[productId].qty++;
+      saveCart(cart);
+      flash(`${p.name} added`);
+    }
+
+    function updateCartBtn(){
+      const cart=getCart();let total=0;for(let k in cart) total+=cart[k].qty;document.getElementById('cartBtn').innerText=`Cart (${total})`;
+    }
+
+    function updateAllCountsFromStorage(){
+      const cart=getCart();
+      products.forEach(p=>{
+        const el=document.getElementById('count-'+p.id);
+        const el2=document.getElementById('count-pop-'+p.id);
+        const qty=(cart[p.id]?.qty)||0;
+        if(el) el.innerText=qty; if(el2) el2.innerText=qty;
+      });
+    }
+
+    function showView(view){
+      // hide all
+      ['homeView','shopView','cartView','loginView','registerView','ordersView','offersView'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.classList.add('hidden');
+      });
+      if(view==='shop') document.getElementById('shopView').classList.remove('hidden');
+      else if(view==='cart') { document.getElementById('cartView').classList.remove('hidden'); renderCartTable(); }
+      else if(view==='login') document.getElementById('loginView').classList.remove('hidden');
+      else if(view==='register') document.getElementById('registerView').classList.remove('hidden');
+      else if(view==='orders') document.getElementById('ordersView').classList.remove('hidden');
+      else if(view==='offers') document.getElementById('offersView').classList.remove('hidden');
+      else document.getElementById('homeView').classList.remove('hidden');
+      window.scrollTo(0,0);
+    }
+
+    function renderCartTable(){
+      const cart=getCart();const table=document.getElementById('cartTable');
+      // remove old rows except header
+      while(table.rows.length>1) table.deleteRow(1);
+      let total=0; for(let id in cart){const row=table.insertRow();row.insertCell(0).innerText=cart[id].name; row.insertCell(1).innerHTML=`<button onclick="decrease(${id})">-</button> ${cart[id].qty} <button onclick="increase(${id})">+</button>`; row.insertCell(2).innerText='₹'+(cart[id].qty*cart[id].price); row.insertCell(3).innerHTML=`<button onclick="removeItem(${id})">Remove</button>`; total+=cart[id].qty*cart[id].price;} document.getElementById('cartTotal').innerText='Total: ₹'+total;
+    }
+
+    function increase(id){const cart=getCart();cart[id].qty++;saveCart(cart);renderCartTable();}
+    function decrease(id){const cart=getCart();if(cart[id].qty>1){cart[id].qty--;saveCart(cart);}else{delete cart[id];saveCart(cart);}renderCartTable();}
+    function removeItem(id){const cart=getCart();delete cart[id];saveCart(cart);renderCartTable();}
+
+    function checkout(){alert('Checkout— your order is placed');localStorage.removeItem('cart');updateCartBtn();showView('home');}
+
+    function flash(msg){const el=document.createElement('div');el.style.position='fixed';el.style.bottom='20px';el.style.left='50%';el.style.transform='translateX(-50%)';el.style.background='rgba(6,95,70,0.95)';el.style.color='#fff';el.style.padding='10px 14px';el.style.borderRadius='8px';el.style.zIndex=9999;el.innerText=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),1400)}
+
+    // Search helper
+    function findProducts(){const q=document.getElementById('searchInput').value.trim().toLowerCase(); if(!q){showView('shop');return;} const filtered=products.filter(p=>p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)); const grid=document.getElementById('productGrid'); grid.innerHTML=''; filtered.forEach(p=>{const c=document.createElement('div');c.className='product-card';c.innerHTML=`<img src="${p.image}" alt="${p.name}"><h4>${p.name}</h4><div class="price-row"><div>₹${p.price}/kg</div><div><button class="btn btn-primary" onclick="addToCart(${p.id})">Add</button></div></div><div class="count-display" id="count-${p.id}">0</div>`;grid.appendChild(c)}); showView('shop');}
+
+    // MOCK OTP login/register (for only - no SMS)
+    let tempOtp='';
+    function sendMockOTP(){const phone=document.getElementById('loginPhone').value.trim(); if(!phone){alert('enter phone');return;} tempOtp=Math.floor(100000+Math.random()*900000).toString(); alert('Mock OTP: '+tempOtp); document.getElementById('loginForm').style.display='none'; document.getElementById('otpForm').style.display='block';}
+    function verifyMockOTP(){const val=document.getElementById('loginOtp').value.trim(); if(val===tempOtp){alert('Login success'); localStorage.setItem('user','demo'); showView('home');} else alert('Invalid OTP');}
+
+    function sendMockOTPRegister(){const phone=document.getElementById('regPhone').value.trim(); if(!phone||!document.getElementById('regName').value.trim()){alert('Enter name and phone');return;} tempOtp=Math.floor(100000+Math.random()*900000).toString(); alert('Mock OTP: '+tempOtp); document.getElementById('regOtpWrap').style.display='block';}
+    function verifyRegisterOTP(){const val=document.getElementById('regOtp').value.trim(); if(val===tempOtp){const name=document.getElementById('regName').value.trim(); const phone=document.getElementById('regPhone').value.trim(); // save demo user
+        localStorage.setItem('user',JSON.stringify({name,phone})); alert('Registered & logged in'); showView('home'); } else alert('Invalid OTP'); }
+
+    // init
+    renderProducts(); updateCartBtn();
+  </script>
+</body>
+</html>
